@@ -45,12 +45,18 @@ namespace lfs::vis {
             const void* opacity = nullptr;
             const void* sh0 = nullptr;
             const void* shn = nullptr;
+            // Tracking the deleted mask pointer + byte count is enough to invalidate
+            // the resident-input cache when the user soft-deletes (or undoes a
+            // delete). The renderer then re-runs the copy path so the opacity
+            // upload applies the latest mask.
+            const void* deleted = nullptr;
             std::size_t means_bytes = 0;
             std::size_t scaling_bytes = 0;
             std::size_t rotation_bytes = 0;
             std::size_t opacity_bytes = 0;
             std::size_t sh0_bytes = 0;
             std::size_t shn_bytes = 0;
+            std::size_t deleted_bytes = 0;
 
             [[nodiscard]] bool valid() const { return model != nullptr && count > 0; }
             [[nodiscard]] friend bool operator==(const ModelInputSnapshot& a,

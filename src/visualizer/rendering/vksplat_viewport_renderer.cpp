@@ -599,6 +599,8 @@ namespace lfs::vis {
             const Tensor& opacity = splat_data.opacity_raw();
             const Tensor& sh0 = splat_data.sh0_raw();
             const Tensor& shn = splat_data.shN_raw();
+            const Tensor* deleted_ptr_src =
+                splat_data.has_deleted_mask() ? &splat_data.deleted() : nullptr;
             return VksplatViewportRenderer::ModelInputSnapshot{
                 .model = &splat_data,
                 .count = static_cast<std::size_t>(splat_data.size()),
@@ -609,12 +611,14 @@ namespace lfs::vis {
                 .opacity = tensor_ptr(opacity),
                 .sh0 = tensor_ptr(sh0),
                 .shn = tensor_ptr(shn),
+                .deleted = deleted_ptr_src ? tensor_ptr(*deleted_ptr_src) : nullptr,
                 .means_bytes = tensor_bytes(means),
                 .scaling_bytes = tensor_bytes(scaling),
                 .rotation_bytes = tensor_bytes(rotation),
                 .opacity_bytes = tensor_bytes(opacity),
                 .sh0_bytes = tensor_bytes(sh0),
                 .shn_bytes = tensor_bytes(shn),
+                .deleted_bytes = deleted_ptr_src ? tensor_bytes(*deleted_ptr_src) : 0,
             };
         }
 
@@ -1282,9 +1286,14 @@ namespace lfs::vis {
         auto rotations_storage = vulkanExternalStorage(splat_data.rotation_raw());
         auto scaling_storage = vulkanExternalStorage(splat_data.scaling_raw());
         auto opacity_storage = vulkanExternalStorage(splat_data.opacity_raw());
+        // When the model has a soft-deleted mask we can't borrow the opacity
+        // buffer directly — the rasterizer has no per-splat skip flag, so the
+        // copy path runs a kernel that bakes the mask into the uploaded opacity
+        // (sigmoid-bound to ~0 for deleted entries). Borrow only when nothing
+        // is marked deleted, otherwise undo/redo of deletes wouldn't take.
         const bool can_bind_external =
             means_storage && sh0_storage && shN_storage && rotations_storage &&
-            scaling_storage && opacity_storage;
+            scaling_storage && opacity_storage && !splat_data.has_deleted_mask();
 
         const auto resize_host_shadows = [&] {
             buffers_.xyz_ws.resize(layout->xyz_bytes / sizeof(float));

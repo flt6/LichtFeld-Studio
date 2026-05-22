@@ -528,9 +528,37 @@ namespace lfs::vis::vksplat {
             !ok) {
             return std::unexpected(ok.error());
         }
-        if (auto ok = copy(opacity_dst, opacity_raw, layout->opacity_bytes,
-                           "cudaMemcpyAsync(VkSplat raw opacity -> Vulkan input)");
-            !ok) {
+        // Honor SplatData::deleted() in the rasterizer: where the legacy CUDA
+        // rasterizer skipped tombstoned gaussians inside the kernel, the
+        // VkSplat shader has no equivalent skip flag, so bake the mask into the
+        // uploaded opacity by writing a strongly-negative raw value (sigmoid →
+        // ~0) for deleted entries. Re-uploading whenever the mask changes is
+        // handled by ModelInputSnapshot tracking deleted().
+        if (splat_data.has_deleted_mask()) {
+            const Tensor& deleted = splat_data.deleted();
+            const auto n = static_cast<std::size_t>(splat_data.size());
+            if (deleted.dtype() != DataType::Bool ||
+                deleted.device() != Device::CUDA ||
+                !deleted.is_contiguous() ||
+                static_cast<std::size_t>(deleted.numel()) != n) {
+                return std::unexpected(
+                    "VkSplat deleted mask must be a contiguous CUDA bool tensor of size N");
+            }
+            if (auto ok = waitForInputStream(stream, deleted, "deleted"); !ok) {
+                return std::unexpected(ok.error());
+            }
+            const cudaError_t status = detail::launchPackOpacityMaskingDeleted(
+                opacity_raw.ptr<float>(),
+                deleted.ptr<bool>(),
+                static_cast<float*>(opacity_dst),
+                n,
+                stream);
+            if (status != cudaSuccess) {
+                return std::unexpected(cudaErrorMessage("launchPackOpacityMaskingDeleted", status));
+            }
+        } else if (auto ok = copy(opacity_dst, opacity_raw, layout->opacity_bytes,
+                                  "cudaMemcpyAsync(VkSplat raw opacity -> Vulkan input)");
+                   !ok) {
             return std::unexpected(ok.error());
         }
 
