@@ -115,13 +115,13 @@ void VulkanGSRenderer::initializeExternal(const std::map<std::string, std::strin
         external_allocator);
 
     createComputePipeline(pipeline_projection_forward, spirv_paths.at("projection_forward"));
-    createComputePipeline(pipeline_projection_forward_gut, spirv_paths.at("projection_forward_gut"));
+    createComputePipeline(pipeline_projection_forward_3dgut, spirv_paths.at("projection_forward_3dgut"));
     createComputePipeline(pipeline_selection_mask, spirv_paths.at("selection_mask"));
     createComputePipeline(pipeline_generate_keys, spirv_paths.at("generate_keys"));
     for (int i = 0; i < 2; ++i) {
         createComputePipeline(pipeline_compute_tile_ranges[i], spirv_paths.at("compute_tile_ranges"));
         createComputePipeline(pipeline_rasterize_forward[i], spirv_paths.at("rasterize_forward"));
-        createComputePipeline(pipeline_rasterize_forward_gut[i], spirv_paths.at("rasterize_forward_gut"));
+        createComputePipeline(pipeline_rasterize_forward_3dgut[i], spirv_paths.at("rasterize_forward_3dgut"));
     }
     createComputePipeline(pipeline_cumsum.single_pass, spirv_paths.at("cumsum_single_pass"));
     createComputePipeline(pipeline_cumsum.block_scan, spirv_paths.at("cumsum_block_scan"));
@@ -167,7 +167,7 @@ void VulkanGSRenderer::executeProjectionForward(
     executeCompute(
         {{num_splats, SUBGROUP_SIZE}},
         &uniforms, sizeof(uniforms),
-        use_gut_projection ? pipeline_projection_forward_gut : pipeline_projection_forward,
+        use_gut_projection ? pipeline_projection_forward_3dgut : pipeline_projection_forward,
         {
             // inputs
             buffers.xyz_ws.deviceBuffer,
@@ -306,7 +306,7 @@ void VulkanGSRenderer::executeRasterizeForward(
         executeCompute(
             {{uniforms.image_width, TILE_WIDTH}, {uniforms.image_height, TILE_HEIGHT}},
             &uniforms, sizeof(uniforms),
-            pipeline_rasterize_forward_gut[buffers.is_unsorted_1],
+            pipeline_rasterize_forward_3dgut[buffers.is_unsorted_1],
             std::vector<_VulkanBuffer>({
                 // inputs
                 buffers.sorted_gauss_idx().deviceBuffer,

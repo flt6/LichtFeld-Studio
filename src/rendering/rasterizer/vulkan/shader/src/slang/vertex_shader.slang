@@ -3,8 +3,8 @@
 import utils;
 import spherical_harmonics;
 
-#ifndef VKSPLAT_GUT_PROJECTION
-#define VKSPLAT_GUT_PROJECTION 0
+#ifndef LFS_3DGUT_PROJECTION
+#define LFS_3DGUT_PROJECTION 0
 #endif
 
 
@@ -486,7 +486,7 @@ void main(
     // projection (differentiable)
   #if EXPORT_MODE != EXPORT_MODE_VULKAN_BACKWARD
     // forward
-  #if VKSPLAT_GUT_PROJECTION
+  #if LFS_3DGUT_PROJECTION
     Splat_2D_Vertex splat = project_gaussian_to_camera_gut(
         gauss,
         cam,

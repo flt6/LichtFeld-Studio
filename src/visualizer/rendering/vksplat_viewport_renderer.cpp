@@ -80,15 +80,15 @@ namespace lfs::vis {
         }
 
         [[nodiscard]] std::map<std::string, std::string> makeVkSplatSpirvPaths() {
-            const std::filesystem::path root{LFS_VKSPLAT_SPV_DIR};
+            const std::filesystem::path root{LFS_VULKAN_RASTERIZER_SPV_DIR};
             return {
                 {"projection_forward", (root / "generated/projection_forward.spv").string()},
-                {"projection_forward_gut", (root / "generated/projection_forward_gut.spv").string()},
+                {"projection_forward_3dgut", (root / "generated/projection_forward_3dgut.spv").string()},
                 {"selection_mask", (root / "generated/selection_mask.spv").string()},
                 {"generate_keys", (root / "generated/generate_keys.spv").string()},
                 {"compute_tile_ranges", (root / "generated/compute_tile_ranges.spv").string()},
                 {"rasterize_forward", (root / "generated/rasterize_forward.spv").string()},
-                {"rasterize_forward_gut", (root / "generated/rasterize_forward_gut.spv").string()},
+                {"rasterize_forward_3dgut", (root / "generated/rasterize_forward_3dgut.spv").string()},
                 {"cumsum_single_pass", (root / "generated/cumsum_single_pass.spv").string()},
                 {"cumsum_block_scan", (root / "generated/cumsum_block_scan.spv").string()},
                 {"cumsum_scan_block_sums", (root / "generated/cumsum_scan_block_sums.spv").string()},

@@ -16,8 +16,8 @@
 
 import utils;
 
-#ifndef VKSPLAT_GUT_RASTERIZE
-#define VKSPLAT_GUT_RASTERIZE 0
+#ifndef LFS_3DGUT_RASTERIZE
+#define LFS_3DGUT_RASTERIZE 0
 #endif
 
 #define SHARED_STRUCT 1
@@ -257,7 +257,7 @@ uint32_t computeTileOverlapBitmask(bool exact, float2 g_xy, float4 g_inv_cov_opa
 #if EXPORT_MODE == EXPORT_MODE_VULKAN_FORWARD
 
 #if SHARED_STRUCT
-#if VKSPLAT_GUT_RASTERIZE
+#if LFS_3DGUT_RASTERIZE
 groupshared Splat_3D_GUT_AlphaBlend collected_gut_splats[TILE_SIZE];
 #else
 groupshared Splat_2D_AlphaBlend collected_splats[TILE_SIZE];
@@ -282,7 +282,7 @@ layout(binding=3) StructuredBuffer<float4> inv_cov_vs_opacity;
 layout(binding=4) StructuredBuffer<float> rgb;
 layout(binding=5) StructuredBuffer<float> depths;
 
-#if VKSPLAT_GUT_RASTERIZE
+#if LFS_3DGUT_RASTERIZE
 layout(binding=6) StructuredBuffer<float> xyz_ws;
 layout(binding=7) StructuredBuffer<float4> rotations;
 layout(binding=8) StructuredBuffer<float> scaling_raw;
@@ -296,7 +296,7 @@ layout(binding=6) RWStructuredBuffer<float4> final_pixel_state;
 layout(binding=7) RWStructuredBuffer<float> final_pixel_depth;
 layout(binding=8) RWStructuredBuffer<int32_t> n_contributors;
 #endif
-#if VKSPLAT_GUT_RASTERIZE
+#if LFS_3DGUT_RASTERIZE
 layout(binding=13) ByteAddressBuffer selection_mask;
 layout(binding=14) ByteAddressBuffer preview_mask;
 layout(binding=15) StructuredBuffer<float4> selection_colors;
@@ -312,7 +312,7 @@ layout(binding=12) StructuredBuffer<uint> gaussian_overlay_flags;
 layout(binding=13) StructuredBuffer<float4> overlay_params;
 #endif
 
-#if VKSPLAT_GUT_RASTERIZE
+#if LFS_3DGUT_RASTERIZE
 [ForceInline]
 bool inverse_3x3(float3x3 m, out float3x3 inv_m)
 {
@@ -419,7 +419,7 @@ void main(
     bool thread_active = is_inside;
 
     float2 center_pix_coord = pix_coord;
-#if VKSPLAT_GUT_RASTERIZE
+#if LFS_3DGUT_RASTERIZE
     float3 ray_origin = float3(0.0);
     float3 ray_direction = float3(0.0, 0.0, 1.0);
     Camera cam = load_camera(uniforms.world_view_transform,
@@ -463,7 +463,7 @@ void main(
         if (tile_idx_start + splat_pointer_offset < tile_idx_end) {
             uint32_t coll_id = uint32_t(sorted_gauss_idx[tile_idx_start + splat_pointer_offset]);
             #if SHARED_STRUCT
-              #if VKSPLAT_GUT_RASTERIZE
+              #if LFS_3DGUT_RASTERIZE
                 collected_gut_splats[thread_rank] =
                     load_transformed_splat_gut_alphablend(int32_t(coll_id), uniforms);
               #else
@@ -481,7 +481,7 @@ void main(
         // check if each splat overlaps with each subtile
         #if SUBTILE_SIZE > 0
         if (thread_rank < min(TILE_SIZE, splats_left_to_process)) {
-            #if VKSPLAT_GUT_RASTERIZE
+            #if LFS_3DGUT_RASTERIZE
                 subtile_overlap_bitmasks[thread_rank] = 0xffffffffu;
             #else
               #if SHARED_STRUCT
@@ -518,7 +518,7 @@ void main(
                 float splat_depth = read_t1_float(splat_id, depths);
                 float4 gauss_rgba;
                 Splat_2D_AlphaBlend overlay_splat;
-              #if VKSPLAT_GUT_RASTERIZE
+              #if LFS_3DGUT_RASTERIZE
                     Splat_3D_GUT_AlphaBlend g = collected_gut_splats[j];
                     gauss_rgba = evaluate_gut_splat(g, ray_origin, ray_direction);
                     overlay_splat = load_splat_alphablend(splat_id, xy_vs, inv_cov_vs_opacity, rgb);
@@ -530,7 +530,7 @@ void main(
                 if (gauss_rgba.a < ALPHA_THRESHOLD)
                     continue;
 
-              #if VKSPLAT_GUT_RASTERIZE
+              #if LFS_3DGUT_RASTERIZE
                 splat_depth = gut_splat_view_depth(g, ray_origin, ray_direction, cam);
               #endif
 

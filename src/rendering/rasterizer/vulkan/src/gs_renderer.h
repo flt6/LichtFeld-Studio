@@ -105,7 +105,7 @@ protected:
         Buffer<int32_t>& output_buffer);
 
     _ComputePipeline pipeline_projection_forward = _ComputePipeline(18);
-    _ComputePipeline pipeline_projection_forward_gut = _ComputePipeline(18);
+    _ComputePipeline pipeline_projection_forward_3dgut = _ComputePipeline(18);
     _ComputePipeline pipeline_selection_mask = _ComputePipeline(8);
     _ComputePipeline pipeline_generate_keys = _ComputePipeline(7);
     // 3 bindings: sorted_keys, out_tile_ranges, index_buffer_offset (for num_isects).
@@ -113,7 +113,7 @@ protected:
         _ComputePipeline(3),
         _ComputePipeline(3)};
     _ComputePipelinePair pipeline_rasterize_forward = _ComputePipelinePair(14);
-    _ComputePipelinePair pipeline_rasterize_forward_gut = _ComputePipelinePair(20);
+    _ComputePipelinePair pipeline_rasterize_forward_3dgut = _ComputePipelinePair(20);
     struct _CumsumComputePipeline {
         _ComputePipeline single_pass = _ComputePipeline(2);
         _ComputePipeline block_scan = _ComputePipeline(3);

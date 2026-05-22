@@ -6,7 +6,7 @@
 
 #include "core/splat_data.hpp"
 #include "rendering/cuda_vulkan_interop.hpp"
-#include "rendering/rasterizer/vksplat_fwd/src/gs_renderer.h"
+#include "rendering/rasterizer/vulkan/src/gs_renderer.h"
 #include "rendering/rendering.hpp"
 #include "window/vulkan_context.hpp"
 

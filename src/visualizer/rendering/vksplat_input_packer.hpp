@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-#include "rendering/rasterizer/vksplat_fwd/src/buffer.h"
+#include "rendering/rasterizer/vulkan/src/buffer.h"
 
 #include "visualizer/visualizer.hpp"
 

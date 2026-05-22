@@ -22,7 +22,7 @@ def test_vksplat_viewer_does_not_reject_orthographic_requests():
 
 
 def test_vksplat_shaders_project_and_raytrace_orthographic_cameras():
-    utils = _read("src/rendering/rasterizer/vksplat_fwd/shader/src/slang/utils.slang")
+    utils = _read("src/rendering/rasterizer/vulkan/shader/src/slang/utils.slang")
 
     assert "ORTHO = 1" in utils
     assert "project_point_ortho" in utils

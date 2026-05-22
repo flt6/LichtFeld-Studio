@@ -301,7 +301,7 @@ if(ENABLE_VULKAN_VIEWER)
             Vulkan::Vulkan
             GPUOpen::VulkanMemoryAllocator
             volk::volk_headers)
-    target_link_libraries(lfs_visualizer PRIVATE lfs_vksplat_fwd)
+    target_link_libraries(lfs_visualizer PRIVATE lfs_vulkan_rasterizer)
     if(WIN32)
         target_compile_definitions(lfs_visualizer PRIVATE VK_USE_PLATFORM_WIN32_KHR)
     endif()

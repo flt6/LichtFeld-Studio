@@ -13,8 +13,8 @@
 
 #include "core/splat_data.hpp"
 #include "core/tensor.hpp"
-#include "rendering/rasterizer/vksplat_fwd/src/buffer.h"
-#include "rendering/rasterizer/vksplat_fwd/src/config.h"
+#include "rendering/rasterizer/vulkan/src/buffer.h"
+#include "rendering/rasterizer/vulkan/src/config.h"
 #include "visualizer/rendering/vksplat_input_packer.hpp"
 
 #include <gtest/gtest.h>
