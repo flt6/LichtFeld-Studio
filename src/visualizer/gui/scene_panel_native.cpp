@@ -502,6 +502,18 @@ namespace lfs::vis::gui {
                                             const float w, const float h,
                                             const PanelDrawContext& ctx) {
         (void)ctx;
+        // A context-menu result is normally consumed in syncPanel(), which only
+        // runs on the live draw paths. Under render-on-demand an idle panel uses
+        // this cached path, so poll the result here too — otherwise a menu action
+        // (e.g. "Go to camera view") sits unconsumed until the panel next goes
+        // live, i.e. until the next mouse move (a multi-second perceived lag).
+        if (auto* gui = services().guiOrNull()) {
+            const std::string action = gui->globalContextMenu().pollResult();
+            if (!action.empty() && tree_el_ && tree_el_->executeContextMenuAction(action)) {
+                host_.markContentDirty();
+                return false; // fall back to a live draw so the panel reflects the change
+            }
+        }
         return host_.drawDirectCached(x, y, w, h);
     }
 
