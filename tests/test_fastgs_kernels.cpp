@@ -9,8 +9,8 @@
 #include "rasterization/fastgs/utils/utils.h"
 #include "training/optimizer/adam_optimizer.hpp"
 #include "training/rasterization/fast_rasterizer.hpp"
-#include <cuda_runtime.h>
 #include <cstdint>
+#include <cuda_runtime.h>
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <limits>
