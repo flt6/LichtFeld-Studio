@@ -679,61 +679,61 @@ void VulkanGSPipeline::setCpuTimerCallback(CpuTimerCallback callback) {
     cpuTimerCallback_ = std::move(callback);
 }
 
-VkAccessFlags toAccessMask(VulkanGSPipeline::BarrierMask barrierMask) {
-    VkAccessFlags result = (VkAccessFlags)0;
+VkAccessFlags2 toAccessMask(VulkanGSPipeline::BarrierMask barrierMask) {
+    VkAccessFlags2 result = VK_ACCESS_2_NONE;
     if (barrierMask == VulkanGSPipeline::TRANSFER_READ ||
         barrierMask == VulkanGSPipeline::TRANSFER_READ_WRITE ||
         barrierMask == VulkanGSPipeline::TRANSFER_COMPUTE_SHADER_READ ||
         barrierMask == VulkanGSPipeline::TRANSFER_COMPUTE_SHADER_READ_WRITE)
-        result |= VK_ACCESS_TRANSFER_READ_BIT;
+        result |= VK_ACCESS_2_TRANSFER_READ_BIT;
     if (barrierMask == VulkanGSPipeline::TRANSFER_WRITE ||
         barrierMask == VulkanGSPipeline::TRANSFER_READ_WRITE ||
         barrierMask == VulkanGSPipeline::TRANSFER_COMPUTE_SHADER_WRITE ||
         barrierMask == VulkanGSPipeline::TRANSFER_COMPUTE_SHADER_READ_WRITE)
-        result |= VK_ACCESS_TRANSFER_WRITE_BIT;
+        result |= VK_ACCESS_2_TRANSFER_WRITE_BIT;
     if (barrierMask == VulkanGSPipeline::COMPUTE_SHADER_READ ||
         barrierMask == VulkanGSPipeline::COMPUTE_SHADER_READ_WRITE ||
         barrierMask == VulkanGSPipeline::TRANSFER_COMPUTE_SHADER_READ ||
         barrierMask == VulkanGSPipeline::TRANSFER_COMPUTE_SHADER_READ_WRITE)
-        result |= VK_ACCESS_SHADER_READ_BIT;
+        result |= VK_ACCESS_2_SHADER_READ_BIT;
     if (barrierMask == VulkanGSPipeline::COMPUTE_SHADER_WRITE ||
         barrierMask == VulkanGSPipeline::COMPUTE_SHADER_READ_WRITE ||
         barrierMask == VulkanGSPipeline::TRANSFER_COMPUTE_SHADER_WRITE ||
         barrierMask == VulkanGSPipeline::TRANSFER_COMPUTE_SHADER_READ_WRITE)
-        result |= VK_ACCESS_SHADER_WRITE_BIT;
+        result |= VK_ACCESS_2_SHADER_WRITE_BIT;
     if (barrierMask == VulkanGSPipeline::HOST_READ ||
         barrierMask == VulkanGSPipeline::HOST_READ_WRITE)
-        result |= VK_ACCESS_HOST_READ_BIT;
+        result |= VK_ACCESS_2_HOST_READ_BIT;
     if (barrierMask == VulkanGSPipeline::HOST_WRITE ||
         barrierMask == VulkanGSPipeline::HOST_READ_WRITE)
-        result |= VK_ACCESS_HOST_WRITE_BIT;
+        result |= VK_ACCESS_2_HOST_WRITE_BIT;
     if (barrierMask == VulkanGSPipeline::INDIRECT_DISPATCH_READ)
-        result |= VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+        result |= VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT;
     return result;
 }
 
-VkPipelineStageFlags toStageMask(VulkanGSPipeline::BarrierMask barrierMask) {
-    VkPipelineStageFlags result = (VkPipelineStageFlags)0;
+VkPipelineStageFlags2 toStageMask(VulkanGSPipeline::BarrierMask barrierMask) {
+    VkPipelineStageFlags2 result = VK_PIPELINE_STAGE_2_NONE;
     if (barrierMask == VulkanGSPipeline::TRANSFER_READ ||
         barrierMask == VulkanGSPipeline::TRANSFER_WRITE ||
         barrierMask == VulkanGSPipeline::TRANSFER_READ_WRITE ||
         barrierMask == VulkanGSPipeline::TRANSFER_COMPUTE_SHADER_READ ||
         barrierMask == VulkanGSPipeline::TRANSFER_COMPUTE_SHADER_WRITE ||
         barrierMask == VulkanGSPipeline::TRANSFER_COMPUTE_SHADER_READ_WRITE)
-        result |= VK_PIPELINE_STAGE_TRANSFER_BIT;
+        result |= VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT;
     if (barrierMask == VulkanGSPipeline::COMPUTE_SHADER_READ ||
         barrierMask == VulkanGSPipeline::COMPUTE_SHADER_WRITE ||
         barrierMask == VulkanGSPipeline::COMPUTE_SHADER_READ_WRITE ||
         barrierMask == VulkanGSPipeline::TRANSFER_COMPUTE_SHADER_READ ||
         barrierMask == VulkanGSPipeline::TRANSFER_COMPUTE_SHADER_WRITE ||
         barrierMask == VulkanGSPipeline::TRANSFER_COMPUTE_SHADER_READ_WRITE)
-        result |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        result |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
     if (barrierMask == VulkanGSPipeline::HOST_READ ||
         barrierMask == VulkanGSPipeline::HOST_WRITE ||
         barrierMask == VulkanGSPipeline::HOST_READ_WRITE)
-        result |= VK_PIPELINE_STAGE_HOST_BIT;
+        result |= VK_PIPELINE_STAGE_2_HOST_BIT;
     if (barrierMask == VulkanGSPipeline::INDIRECT_DISPATCH_READ)
-        result |= VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+        result |= VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
     return result;
 }
 
@@ -743,36 +743,38 @@ void VulkanGSPipeline::bufferMemoryBarrier(
     if (!commandBatchInProgress)
         return;
 
-    std::vector<VkBufferMemoryBarrier> barriers;
+    const VkPipelineStageFlags2 dstStageMask = toStageMask(dstMask);
+    const VkAccessFlags2 dstAccessMask = toAccessMask(dstMask);
+
+    std::vector<VkBufferMemoryBarrier2> barriers;
     barriers.reserve(buffers.size());
-    VkPipelineStageFlags srcStageFlags = (VkPipelineStageFlags)0;
     for (auto& [buffer, srcMask] : buffers) {
         if (buffer.buffer == VK_NULL_HANDLE)
             continue;
-        VkBufferMemoryBarrier barrier = {};
-        barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        VkBufferMemoryBarrier2 barrier = {};
+        barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
         barrier.pNext = nullptr;
+        barrier.srcStageMask = toStageMask(srcMask);
         barrier.srcAccessMask = toAccessMask(srcMask);
-        barrier.dstAccessMask = toAccessMask(dstMask);
+        barrier.dstStageMask = dstStageMask;
+        barrier.dstAccessMask = dstAccessMask;
         barrier.srcQueueFamilyIndex = queue_family_index;
         barrier.dstQueueFamilyIndex = queue_family_index;
         barrier.buffer = buffer.buffer;
         barrier.offset = buffer.offset;
         barrier.size = buffer.size;
         barriers.push_back(barrier);
-        srcStageFlags |= toStageMask(srcMask);
     }
     if (barriers.empty())
         return;
 
-    vkCmdPipelineBarrier(
-        command_buffer,
-        srcStageFlags, toStageMask(dstMask),
-        0,                                          // dependencyFlags
-        0, nullptr,                                 // memory barriers
-        (uint32_t)barriers.size(), barriers.data(), // buffer barriers
-        0, nullptr                                  // image barriers
-    );
+    const uint32_t barrier_count = static_cast<uint32_t>(barriers.size());
+    VkDependencyInfo dependency = {};
+    dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+    dependency.bufferMemoryBarrierCount = barrier_count;
+    dependency.pBufferMemoryBarriers = barriers.data();
+
+    vkCmdPipelineBarrier2(command_buffer, &dependency);
 }
 
 // Compute pipeline

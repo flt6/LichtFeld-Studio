@@ -195,23 +195,30 @@ namespace lfs::vis {
             return static_cast<bool>(file.read(data.data(), size));
         }
 
-        [[nodiscard]] bool validPipelineCacheHeader(const std::vector<char>& data,
-                                                    const VkPhysicalDeviceProperties& device_props) {
+        [[nodiscard]] const char* pipelineCacheRejectReason(const std::vector<char>& data,
+                                                            const VkPhysicalDeviceProperties& device_props) {
             if (data.size() < sizeof(VkPipelineCacheHeaderVersionOne)) {
-                return false;
+                return "file smaller than cache header";
             }
 
             VkPipelineCacheHeaderVersionOne header{};
             std::memcpy(&header, data.data(), sizeof(header));
-            if (header.headerSize < sizeof(VkPipelineCacheHeaderVersionOne) ||
-                header.headerSize > data.size() ||
-                header.headerVersion != VK_PIPELINE_CACHE_HEADER_VERSION_ONE ||
-                header.vendorID != device_props.vendorID ||
-                header.deviceID != device_props.deviceID) {
-                return false;
+            if (header.headerSize < sizeof(VkPipelineCacheHeaderVersionOne) || header.headerSize > data.size()) {
+                return "header size out of bounds";
             }
-
-            return std::memcmp(header.pipelineCacheUUID, device_props.pipelineCacheUUID, VK_UUID_SIZE) == 0;
+            if (header.headerVersion != VK_PIPELINE_CACHE_HEADER_VERSION_ONE) {
+                return "unsupported header version";
+            }
+            if (header.vendorID != device_props.vendorID) {
+                return "vendorID mismatch";
+            }
+            if (header.deviceID != device_props.deviceID) {
+                return "deviceID mismatch";
+            }
+            if (std::memcmp(header.pipelineCacheUUID, device_props.pipelineCacheUUID, VK_UUID_SIZE) != 0) {
+                return "pipelineCacheUUID mismatch (driver update?)";
+            }
+            return nullptr;
         }
 
         constexpr std::uint64_t kWaitForeverNs = std::numeric_limits<std::uint64_t>::max();
@@ -593,6 +600,8 @@ namespace lfs::vis {
         if (!frame_active_) {
             return true;
         }
+
+        drainCompletedImmediateSubmits();
 
         const std::size_t current_frame = active_frame_index_;
         VkCommandBuffer command_buffer = command_buffers_[current_frame];
@@ -2657,7 +2666,9 @@ namespace lfs::vis {
         if (readFile(path, cache_data)) {
             VkPhysicalDeviceProperties device_props{};
             vkGetPhysicalDeviceProperties(physical_device_, &device_props);
-            if (!validPipelineCacheHeader(cache_data, device_props)) {
+            if (const char* reason = pipelineCacheRejectReason(cache_data, device_props)) {
+                LOG_WARN("Discarding on-disk Vulkan pipeline cache ({}): {} — pipelines will be recompiled",
+                         lfs::core::path_to_utf8(path), reason);
                 cache_data.clear();
             }
         }
@@ -2669,6 +2680,8 @@ namespace lfs::vis {
 
         VkResult result = vkCreatePipelineCache(device_, &create_info, nullptr, &pipeline_cache_);
         if (result != VK_SUCCESS && !cache_data.empty()) {
+            LOG_WARN("vkCreatePipelineCache rejected on-disk data ({}); retrying empty — pipelines will be recompiled",
+                     vkResultToString(result));
             cache_data.clear();
             create_info.initialDataSize = 0;
             create_info.pInitialData = nullptr;
@@ -2834,7 +2847,13 @@ namespace lfs::vis {
         // resources while that work is still in flight loses the device (Xid 109).
         // vkDeviceWaitIdle drains all queue work (it does not touch presentation, so
         // it cannot deadlock on the compositor the way vkQueueWaitIdle(present) can).
-        vkDeviceWaitIdle(device_);
+        // A bounded wait is not possible here: vkDeviceWaitIdle takes no timeout, and the
+        // async-compute submits are timeline-semaphore gated with no VkFence this context
+        // tracks. The timer below surfaces a pathological stall instead of hiding it.
+        {
+            LOG_TIMER_THRESHOLD("frame_pacing.vulkan_recreateSwapchain.device_wait_idle", 1.0);
+            vkDeviceWaitIdle(device_);
+        }
         destroySwapchain();
         const bool created = createSwapchain(framebuffer_width_, framebuffer_height_) &&
                              createImageViews() &&

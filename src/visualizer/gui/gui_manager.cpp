@@ -3984,6 +3984,8 @@ namespace lfs::vis::gui {
 
         {
             LOG_TIMER("interop.copyTensorToSurface");
+            assert(target.layout == VK_IMAGE_LAYOUT_GENERAL &&
+                   "CUDA surf2Dwrite requires VK_IMAGE_LAYOUT_GENERAL");
             if (!target.interop.copyTensorToSurface(*vulkan_scene_image_)) {
                 fail_required_interop(std::format("CUDA copy failed: {}", target.interop.lastError()));
             }
@@ -4201,6 +4203,8 @@ namespace lfs::vis::gui {
             target.layout = VK_IMAGE_LAYOUT_GENERAL;
         }
 
+        assert(target.layout == VK_IMAGE_LAYOUT_GENERAL &&
+               "CUDA surf2Dwrite requires VK_IMAGE_LAYOUT_GENERAL");
         if (!target.interop.copyTensorToSurface(*vulkan_split_right_image_)) {
             fail_required_interop(std::format("CUDA copy failed: {}", target.interop.lastError()));
         }
@@ -4415,6 +4419,8 @@ namespace lfs::vis::gui {
             target.layout = VK_IMAGE_LAYOUT_GENERAL;
         }
 
+        assert(target.layout == VK_IMAGE_LAYOUT_GENERAL &&
+               "CUDA surf2Dwrite requires VK_IMAGE_LAYOUT_GENERAL");
         if (!target.interop.copyTensorToSurface(*vulkan_depth_blit_image_)) {
             fail_required_interop(std::format("CUDA copy failed: {}", target.interop.lastError()));
         }

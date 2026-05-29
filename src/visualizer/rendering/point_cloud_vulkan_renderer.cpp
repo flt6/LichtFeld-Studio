@@ -1133,16 +1133,19 @@ namespace lfs::vis {
             }
 
             // Make the just-uploaded data visible to the vertex stage.
-            VkMemoryBarrier xfer_to_vert{};
-            xfer_to_vert.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-            xfer_to_vert.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            xfer_to_vert.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT |
-                                         VK_ACCESS_SHADER_READ_BIT;
-            vkCmdPipelineBarrier(command_buffer,
-                                 VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                 VK_PIPELINE_STAGE_VERTEX_INPUT_BIT |
-                                     VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-                                 0, 1, &xfer_to_vert, 0, nullptr, 0, nullptr);
+            VkMemoryBarrier2 xfer_to_vert{};
+            xfer_to_vert.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
+            xfer_to_vert.srcStageMask = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT;
+            xfer_to_vert.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+            xfer_to_vert.dstStageMask = VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT |
+                                        VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+            xfer_to_vert.dstAccessMask = VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT |
+                                         VK_ACCESS_2_SHADER_READ_BIT;
+            VkDependencyInfo xfer_dependency{};
+            xfer_dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            xfer_dependency.memoryBarrierCount = 1;
+            xfer_dependency.pMemoryBarriers = &xfer_to_vert;
+            vkCmdPipelineBarrier2(command_buffer, &xfer_dependency);
 
             updateDescriptorSet();
 
