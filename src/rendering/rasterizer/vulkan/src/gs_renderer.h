@@ -170,6 +170,8 @@ protected:
                                       const char* cpu_timer_prefix);
     void executePrepareTileSort(const VulkanGSRendererUniforms& uniforms,
                                 VulkanGSPipelineBuffers& buffers);
+    void executeBatchedRasterizeForward(const VulkanGSRendererUniforms& uniforms,
+                                        VulkanGSPipelineBuffers& buffers);
 
     _ComputePipeline pipeline_projection_forward = _ComputePipeline(19);
     _ComputePipeline pipeline_projection_forward_3dgut = _ComputePipeline(19);
@@ -190,6 +192,10 @@ protected:
     _ComputePipelinePair pipeline_rasterize_forward_3dgut = _ComputePipelinePair(20);
     _ComputePipelinePair pipeline_rasterize_forward_plain = _ComputePipelinePair(14);
     _ComputePipelinePair pipeline_rasterize_forward_3dgut_plain = _ComputePipelinePair(20);
+    _ComputePipeline pipeline_tile_batch_counts = _ComputePipeline(2);
+    _ComputePipeline pipeline_tile_batch_descriptors = _ComputePipeline(4);
+    _ComputePipelinePair pipeline_rasterize_forward_batches_plain = _ComputePipelinePair(7);
+    _ComputePipeline pipeline_compose_tile_batches_plain = _ComputePipeline(12);
     struct _CumsumComputePipeline {
         _ComputePipeline single_pass = _ComputePipeline(2);
         _ComputePipeline block_scan = _ComputePipeline(3);
