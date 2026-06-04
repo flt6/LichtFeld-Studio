@@ -1044,6 +1044,10 @@ struct Uniforms {
     uint sort_capacity;
     uint shN_layout_slots;
     uint mip_filter;
+    uint render_origin_x;
+    uint render_origin_y;
+    uint camera_width;
+    uint camera_height;
     uint pad2;
     float fx;
     float fy;

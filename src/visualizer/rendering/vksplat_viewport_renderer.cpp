@@ -990,6 +990,14 @@ namespace lfs::vis {
             uniforms.image_height = static_cast<std::uint32_t>(frame_view.size.y);
             uniforms.grid_width = _CEIL_DIV(uniforms.image_width, TILE_WIDTH);
             uniforms.grid_height = _CEIL_DIV(uniforms.image_height, TILE_HEIGHT);
+            const glm::ivec2 camera_size =
+                frame_view.subregion_full_size.x > 0 && frame_view.subregion_full_size.y > 0
+                    ? frame_view.subregion_full_size
+                    : frame_view.size;
+            uniforms.render_origin_x = static_cast<std::uint32_t>(std::max(frame_view.subregion_origin.x, 0));
+            uniforms.render_origin_y = static_cast<std::uint32_t>(std::max(frame_view.subregion_origin.y, 0));
+            uniforms.camera_width = static_cast<std::uint32_t>(std::max(camera_size.x, 1));
+            uniforms.camera_height = static_cast<std::uint32_t>(std::max(camera_size.y, 1));
             uniforms.num_splats = static_cast<std::uint32_t>(num_splats);
             uniforms.active_sh = static_cast<std::uint32_t>(active_sh_degree);
             uniforms.shN_layout_slots = shN_layout_slots;
@@ -1003,8 +1011,8 @@ namespace lfs::vis {
                         : lfs::rendering::DEFAULT_ORTHO_SCALE;
                 uniforms.fx = ortho_scale;
                 uniforms.fy = ortho_scale;
-                uniforms.cx = static_cast<float>(frame_view.size.x) * 0.5f;
-                uniforms.cy = static_cast<float>(frame_view.size.y) * 0.5f;
+                uniforms.cx = static_cast<float>(camera_size.x) * 0.5f;
+                uniforms.cy = static_cast<float>(camera_size.y) * 0.5f;
             } else if (frame_view.intrinsics_override) {
                 const auto& intrinsics = *frame_view.intrinsics_override;
                 uniforms.fx = intrinsics.focal_x;
@@ -1013,11 +1021,11 @@ namespace lfs::vis {
                 uniforms.cy = intrinsics.center_y;
             } else {
                 const auto [fx, fy] = lfs::rendering::computePixelFocalLengths(
-                    frame_view.size, frame_view.focal_length_mm);
+                    camera_size, frame_view.focal_length_mm);
                 uniforms.fx = fx;
                 uniforms.fy = fy;
-                uniforms.cx = static_cast<float>(frame_view.size.x) * 0.5f;
-                uniforms.cy = static_cast<float>(frame_view.size.y) * 0.5f;
+                uniforms.cx = static_cast<float>(camera_size.x) * 0.5f;
+                uniforms.cy = static_cast<float>(camera_size.y) * 0.5f;
             }
 
             const glm::mat3 camera_to_world =

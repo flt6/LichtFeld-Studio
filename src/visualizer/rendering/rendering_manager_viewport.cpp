@@ -56,8 +56,6 @@ namespace lfs::vis {
         [[nodiscard]] lfs::rendering::CameraIntrinsics previewTileIntrinsics(
             const int full_width,
             const int full_height,
-            const int tile_x,
-            const int tile_y,
             const float focal_length_mm) {
             const auto [fx, fy] = lfs::rendering::computePixelFocalLengths(
                 {full_width, full_height},
@@ -65,8 +63,8 @@ namespace lfs::vis {
             return lfs::rendering::CameraIntrinsics{
                 .focal_x = fx,
                 .focal_y = fy,
-                .center_x = static_cast<float>(full_width) * 0.5f - static_cast<float>(tile_x),
-                .center_y = static_cast<float>(full_height) * 0.5f - static_cast<float>(tile_y),
+                .center_x = static_cast<float>(full_width) * 0.5f,
+                .center_y = static_cast<float>(full_height) * 0.5f,
             };
         }
 
@@ -490,7 +488,9 @@ namespace lfs::vis {
             width,
             height,
             render_lock_held,
-            std::move(intrinsics_override));
+            std::move(intrinsics_override),
+            {},
+            {});
         if (!rendered) {
             LOG_ERROR("DEBUG_VIDEO Gaussian preview image render failed: {}", rendered.error());
             return {};
@@ -520,7 +520,9 @@ namespace lfs::vis {
         const int width,
         const int height,
         const bool render_lock_held,
-        std::optional<lfs::rendering::CameraIntrinsics> intrinsics_override) {
+        std::optional<lfs::rendering::CameraIntrinsics> intrinsics_override,
+        const glm::ivec2 subregion_origin,
+        const glm::ivec2 subregion_full_size) {
         if (width <= 0 || height <= 0) {
             return std::unexpected("invalid preview render dimensions");
         }
@@ -563,6 +565,8 @@ namespace lfs::vis {
 
         auto request = buildViewportRenderRequest(frame_ctx, frame_ctx.render_size);
         request.frame_view.intrinsics_override = std::move(intrinsics_override);
+        request.frame_view.subregion_origin = subregion_origin;
+        request.frame_view.subregion_full_size = subregion_full_size;
         request.raster_backend =
             lfs::rendering::normalizeViewerRasterBackend(request.raster_backend, request.gut);
         request.gut = lfs::rendering::isGutBackend(request.raster_backend);
@@ -630,8 +634,6 @@ namespace lfs::vis {
             const auto intrinsics = previewTileIntrinsics(
                 width,
                 height,
-                0,
-                tile_y,
                 focal_length_mm);
             auto rendered = renderPreviewImageToPreviewSlotWithState(
                 scene_manager,
@@ -643,7 +645,9 @@ namespace lfs::vis {
                 tile_width,
                 tile_height,
                 render_lock_held,
-                intrinsics);
+                intrinsics,
+                {0, tile_y},
+                {width, height});
             if (!rendered) {
                 LOG_TRACE("Gaussian preview tiled render failed at tile y={} height={}: {}",
                           tile_y,

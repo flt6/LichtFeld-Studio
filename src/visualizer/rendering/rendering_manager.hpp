@@ -482,7 +482,9 @@ namespace lfs::vis {
             int width,
             int height,
             bool render_lock_held,
-            std::optional<lfs::rendering::CameraIntrinsics> intrinsics_override);
+            std::optional<lfs::rendering::CameraIntrinsics> intrinsics_override,
+            glm::ivec2 subregion_origin,
+            glm::ivec2 subregion_full_size);
         std::shared_ptr<lfs::core::Tensor> renderPreviewImageTiledWithState(
             SceneManager* scene_manager,
             const lfs::core::SplatData& model,
