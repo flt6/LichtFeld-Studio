@@ -722,7 +722,7 @@ namespace lfs::vis {
     }
 
     bool WindowManager::isMaximized() const {
-        return is_work_area_maximized_ || isSdlMaximized();
+        return is_borderless_maximized_ || isSdlMaximized();
     }
 
     void WindowManager::minimize() {
@@ -741,7 +741,7 @@ namespace lfs::vis {
             return;
         }
 
-        maximizeToWorkArea("toggleMaximized-maximize", true);
+        maximizeBorderless("toggleMaximized-maximize", true);
     }
 
     void WindowManager::setTitlebarDragRegion(const int height_px, std::vector<HitTestRect> excluded_rects) {
@@ -793,7 +793,7 @@ namespace lfs::vis {
             static_cast<int>(std::lround(global_y)));
 
         if (!isMaximized()) {
-            saveMaximizedRestoreGeometry();
+            saveBorderlessRestoreGeometry();
         }
         titlebar_drag_active_ = true;
     }
@@ -812,7 +812,7 @@ namespace lfs::vis {
         if (!should_maximize)
             return;
 
-        maximizeToWorkArea("titlebar-drag-top-maximize", false);
+        maximizeBorderless("titlebar-drag-top-maximize", false);
     }
 
     void WindowManager::finishTitlebarDragIfReleased() {
@@ -830,54 +830,65 @@ namespace lfs::vis {
         return window_ && (SDL_GetWindowFlags(window_) & SDL_WINDOW_MAXIMIZED) != 0;
     }
 
-    void WindowManager::saveMaximizedRestoreGeometry() {
+    void WindowManager::saveBorderlessRestoreGeometry() {
         if (!window_)
             return;
 
-        SDL_GetWindowPosition(window_, &maximized_restore_pos_.x, &maximized_restore_pos_.y);
-        SDL_GetWindowSize(window_, &maximized_restore_size_.x, &maximized_restore_size_.y);
+        SDL_GetWindowPosition(window_, &borderless_restore_pos_.x, &borderless_restore_pos_.y);
+        SDL_GetWindowSize(window_, &borderless_restore_size_.x, &borderless_restore_size_.y);
     }
 
-    void WindowManager::maximizeToWorkArea(const char* const reason, const bool save_restore_geometry) {
+    void WindowManager::maximizeBorderless(const char* const reason, const bool save_restore_geometry) {
         if (!window_ || is_fullscreen_)
             return;
 
         if (save_restore_geometry) {
-            saveMaximizedRestoreGeometry();
+            saveBorderlessRestoreGeometry();
         }
 
         if (isSdlMaximized() && !SDL_RestoreWindow(window_)) {
-            LOG_WARN("Failed to restore SDL-maximized window before applying work-area maximize: {}", SDL_GetError());
+            LOG_WARN("Failed to restore SDL-maximized window before borderless maximize: {}", SDL_GetError());
             return;
         }
 
         const SDL_DisplayID display_id = SDL_GetDisplayForWindow(window_);
+        SDL_Rect display_bounds{};
         SDL_Rect usable_bounds{};
-        if (display_id == 0 || !SDL_GetDisplayUsableBounds(display_id, &usable_bounds)) {
-            LOG_WARN("Failed to query usable display bounds for maximize: {}", SDL_GetError());
+        if (display_id == 0 ||
+            !SDL_GetDisplayBounds(display_id, &display_bounds) ||
+            !SDL_GetDisplayUsableBounds(display_id, &usable_bounds) ||
+            display_bounds.w <= 0 || display_bounds.h <= 0 ||
+            usable_bounds.w <= 0 || usable_bounds.h <= 0) {
+            LOG_WARN("Failed to query display work area for borderless maximize: {}", SDL_GetError());
             if (!SDL_MaximizeWindow(window_)) {
                 LOG_WARN("Failed to maximize window: {}", SDL_GetError());
                 return;
             }
-            is_work_area_maximized_ = false;
+            is_borderless_maximized_ = false;
             updateWindowSize(reason);
             wakeEventLoop();
             return;
         }
 
-        const bool position_set = SDL_SetWindowPosition(window_, usable_bounds.x, usable_bounds.y);
-        const bool size_set = SDL_SetWindowSize(window_, usable_bounds.w, usable_bounds.h);
+        SDL_Rect target_bounds = usable_bounds;
+        // Keep work-area dimensions so taskbars stay visible. Ask for the
+        // display top; some WMs may still clamp managed windows to work-area y.
+        target_bounds.y = display_bounds.y;
+        target_bounds.h = std::min(usable_bounds.h, display_bounds.h);
+
+        const bool size_set = SDL_SetWindowSize(window_, target_bounds.w, target_bounds.h);
+        const bool position_set = SDL_SetWindowPosition(window_, target_bounds.x, target_bounds.y);
         if (!position_set || !size_set) {
-            LOG_WARN("Failed to apply work-area maximize bounds {}x{} at {},{}: {}",
-                     usable_bounds.w,
-                     usable_bounds.h,
-                     usable_bounds.x,
-                     usable_bounds.y,
+            LOG_WARN("Failed to apply borderless maximize bounds {}x{} at {},{}: {}",
+                     target_bounds.w,
+                     target_bounds.h,
+                     target_bounds.x,
+                     target_bounds.y,
                      SDL_GetError());
             return;
         }
 
-        is_work_area_maximized_ = true;
+        is_borderless_maximized_ = true;
         updateWindowSize(reason);
         wakeEventLoop();
     }
@@ -886,22 +897,27 @@ namespace lfs::vis {
         if (!window_)
             return;
 
-        if (is_work_area_maximized_) {
+        if (is_borderless_maximized_) {
+            if (isSdlMaximized() && !SDL_RestoreWindow(window_)) {
+                LOG_WARN("Failed to restore SDL-maximized window before borderless restore: {}", SDL_GetError());
+                return;
+            }
+
             const bool position_set = SDL_SetWindowPosition(
-                window_, maximized_restore_pos_.x, maximized_restore_pos_.y);
+                window_, borderless_restore_pos_.x, borderless_restore_pos_.y);
             const bool size_set = SDL_SetWindowSize(
-                window_, maximized_restore_size_.x, maximized_restore_size_.y);
+                window_, borderless_restore_size_.x, borderless_restore_size_.y);
             if (!position_set || !size_set) {
-                LOG_WARN("Failed to restore work-area maximized window to {}x{} at {},{}: {}",
-                         maximized_restore_size_.x,
-                         maximized_restore_size_.y,
-                         maximized_restore_pos_.x,
-                         maximized_restore_pos_.y,
+                LOG_WARN("Failed to restore borderless maximized window to {}x{} at {},{}: {}",
+                         borderless_restore_size_.x,
+                         borderless_restore_size_.y,
+                         borderless_restore_pos_.x,
+                         borderless_restore_pos_.y,
                          SDL_GetError());
                 return;
             }
 
-            is_work_area_maximized_ = false;
+            is_borderless_maximized_ = false;
             updateWindowSize(reason);
             wakeEventLoop();
             return;
