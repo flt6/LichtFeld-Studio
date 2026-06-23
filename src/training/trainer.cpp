@@ -60,6 +60,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 namespace lfs::training {
 
@@ -83,6 +84,62 @@ namespace lfs::training {
             return value != "0" && value != "false" && value != "FALSE" &&
                    value != "off" && value != "OFF" &&
                    value != "no" && value != "NO";
+        }
+
+        [[nodiscard]] std::unique_ptr<lfs::core::SplatData> make_ply_export_model(
+            const lfs::core::SplatData& model,
+            const bool exclude_frozen_ranges) {
+            if (!exclude_frozen_ranges || !model.has_frozen_ranges()) {
+                return nullptr;
+            }
+
+            const size_t count = model.size();
+            if (count == 0) {
+                return nullptr;
+            }
+
+            std::vector<bool> keep(count, true);
+            size_t excluded_count = 0;
+            for (const auto& range : model.frozen_ranges()) {
+                if (range.count == 0 || range.start >= count) {
+                    continue;
+                }
+                const size_t remaining = count - range.start;
+                const size_t end = range.start + std::min(range.count, remaining);
+                for (size_t idx = range.start; idx < end; ++idx) {
+                    if (keep[idx]) {
+                        keep[idx] = false;
+                        ++excluded_count;
+                    }
+                }
+            }
+
+            if (excluded_count == 0) {
+                return nullptr;
+            }
+            if (excluded_count == count) {
+                LOG_WARN("Skipping frozen-add-splat export exclusion because it would remove all {} Gaussians",
+                         count);
+                return nullptr;
+            }
+
+            auto keep_mask = lfs::core::Tensor::from_vector(
+                keep,
+                lfs::core::TensorShape({count}),
+                model.means_raw().device());
+            auto filtered = std::make_unique<lfs::core::SplatData>(
+                lfs::core::extract_by_mask(model, keep_mask));
+            if (!filtered->means_raw().is_valid() || filtered->size() == 0) {
+                LOG_WARN("Failed to build frozen-add-splat filtered export model; exporting full model");
+                return nullptr;
+            }
+
+            LOG_INFO("Excluding {} frozen added Gaussian{} from PLY export ({} -> {})",
+                     excluded_count,
+                     excluded_count == 1 ? "" : "s",
+                     count,
+                     filtered->size());
+            return filtered;
         }
 
         [[nodiscard]] int env_int_or_default(const char* name, const int fallback) {
@@ -4342,7 +4399,12 @@ namespace lfs::training {
             .binary = true,
             .async = !join_threads};
 
-        const auto ply_result = lfs::io::save_ply(strategy_->get_model(), ply_options);
+        const auto& model = strategy_->get_model();
+        const auto export_model = make_ply_export_model(
+            model,
+            params_.exclude_frozen_add_splats_from_export);
+        const auto& model_for_export = export_model ? *export_model : model;
+        const auto ply_result = lfs::io::save_ply(model_for_export, ply_options);
         if (!ply_result) {
             if (ply_result.error().code == lfs::io::ErrorCode::INSUFFICIENT_DISK_SPACE) {
                 lfs::core::events::state::DiskSpaceSaveFailed{
