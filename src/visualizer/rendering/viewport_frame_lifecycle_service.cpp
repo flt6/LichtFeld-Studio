@@ -115,6 +115,14 @@ namespace lfs::vis {
                std::chrono::steady_clock::now() - last_resize_change_ >= kResizeSettleQuietDelay;
     }
 
+    bool ViewportFrameLifecycleService::resizeRecentlyChanged(
+        const std::chrono::steady_clock::duration max_age) const {
+        if (last_resize_change_ == std::chrono::steady_clock::time_point{}) {
+            return false;
+        }
+        return std::chrono::steady_clock::now() - last_resize_change_ < max_age;
+    }
+
     double ViewportFrameLifecycleService::secondsUntilResizeSettleReady() const {
         if (!hasPendingResizeSettle()) {
             return 0.0;

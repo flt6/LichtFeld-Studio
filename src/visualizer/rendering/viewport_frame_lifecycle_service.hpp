@@ -39,6 +39,7 @@ namespace lfs::vis {
         [[nodiscard]] bool hasPendingResizeSettle() const;
         [[nodiscard]] bool resizeSettleReady() const;
         [[nodiscard]] double secondsUntilResizeSettleReady() const;
+        [[nodiscard]] bool resizeRecentlyChanged(std::chrono::steady_clock::duration max_age) const;
         [[nodiscard]] bool isResizeDeferring() const {
             return resize_active_.load(std::memory_order_relaxed) || resize_settle_pending_;
         }

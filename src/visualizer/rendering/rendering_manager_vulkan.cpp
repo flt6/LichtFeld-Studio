@@ -38,6 +38,7 @@ namespace lfs::vis {
         constexpr bool kEnableLodTransitionWeights = true;
         constexpr double kGpuLodRenderCapacityOverhead = 1.20;
         constexpr float kInteractiveResizeRenderScale = 0.33f;
+        constexpr auto kTrainingOutputResizeStableDelay = std::chrono::milliseconds(500);
 
         struct LodObjectFrame {
             glm::mat4 object_to_view{1.0f};
@@ -985,18 +986,14 @@ namespace lfs::vis {
                 requestResizeTrainingPause(trainer_manager);
                 dirty_mask_.fetch_or(vksplatOutputResizeRetryDirty(frame_dirty),
                                      std::memory_order_relaxed);
-                LOG_PERF("renderVulkanFrame: deferring VkSplat output resize until training pause takes effect");
                 render_lock.reset();
                 return cached_frame_result();
             }
-            const cudaError_t sync_status = cudaDeviceSynchronize();
-            if (sync_status != cudaSuccess) {
+            if (has_cached_viewport_output &&
+                frame_lifecycle_service_.resizeRecentlyChanged(kTrainingOutputResizeStableDelay)) {
                 dirty_mask_.fetch_or(vksplatOutputResizeRetryDirty(frame_dirty),
                                      std::memory_order_relaxed);
-                LOG_WARN("Skipping Vulkan viewport resize because CUDA sync after resize pause failed: {}",
-                         cudaGetErrorString(sync_status));
                 render_lock.reset();
-                release_resize_pause_if_idle();
                 return cached_frame_result();
             }
             LOG_DEBUG("Training paused for VkSplat output resize to {}x{}", render_size.x, render_size.y);
