@@ -60,7 +60,6 @@ namespace lfs::gui {
         VideoExtractorDialog();
         ~VideoExtractorDialog() override;
 
-        bool render() override;
         [[nodiscard]] bool isVideoPlaying() const override;
         void shutdown() override;
         [[nodiscard]] bool supportsDirectDraw() const override { return true; }
@@ -116,7 +115,7 @@ namespace lfs::gui {
         void clearElementCache();
         void cacheElements();
         void bindEventListeners();
-        void syncPanel(const lfs::vis::gui::PanelDrawContext& ctx);
+        void syncPanel();
         void syncLocale();
         void syncVideoPreview();
         void syncTimeline();
@@ -177,7 +176,6 @@ namespace lfs::gui {
         std::unique_ptr<lfs::vis::gui::RmlPanelHost> host_;
         EventListener listener_;
         Rml::ElementDocument* document_ = nullptr;
-        const lfs::vis::gui::PanelInputState* input_ = nullptr;
         std::string last_language_;
         std::string preview_src_;
         bool elements_cached_ = false;

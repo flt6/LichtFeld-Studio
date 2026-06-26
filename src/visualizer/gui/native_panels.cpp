@@ -31,7 +31,7 @@ namespace lfs::vis::gui::native_panels {
 
     void VideoExtractorPanel::draw(const PanelDrawContext& ctx) {
         (void)ctx;
-        if (!widget_ || !widget_->render())
+        if (!widget_)
             PanelRegistry::instance().set_panel_enabled("native.video_extractor", false);
     }
 

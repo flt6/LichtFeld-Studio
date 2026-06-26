@@ -20,7 +20,6 @@ namespace lfs::gui {
     class IVideoExtractorWidget {
     public:
         virtual ~IVideoExtractorWidget() = default;
-        virtual bool render() = 0;
         [[nodiscard]] virtual bool isVideoPlaying() const = 0;
         virtual void shutdown() = 0;
 

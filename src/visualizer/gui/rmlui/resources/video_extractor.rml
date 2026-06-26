@@ -5,7 +5,7 @@
 <body id="body">
   <div id="window-frame" class="video-extractor-window">
     <div id="title-bar">
-      <span id="title-text">Extract Frames from Video</span>
+      <span id="title-text">@tr:video_extractor.title</span>
       <span id="close-btn">&#xD7;</span>
     </div>
 
@@ -13,17 +13,17 @@
       <div id="content">
         <div id="preview-shell">
           <img id="preview-image" />
-          <span id="preview-empty">Select a video file to preview</span>
+          <span id="preview-empty">@tr:video_extractor.select_preview</span>
         </div>
 
         <div id="transport-row">
-          <button id="btn-step-back" class="transport-btn" type="button" title="Step backward">
+          <button id="btn-step-back" class="transport-btn" type="button" title="@tr:video_extractor.step_backward">
             <img src="../icon/sequencer/step-back.png" />
           </button>
-          <button id="btn-play" class="transport-btn transport-btn--primary" type="button" title="Play">
+          <button id="btn-play" class="transport-btn transport-btn--primary" type="button" title="@tr:video_extractor.play">
             <img id="play-icon" src="../icon/sequencer/play.png" />
           </button>
-          <button id="btn-step-forward" class="transport-btn" type="button" title="Step forward">
+          <button id="btn-step-forward" class="transport-btn" type="button" title="@tr:video_extractor.step_forward">
             <img src="../icon/sequencer/step-forward.png" />
           </button>
           <span id="time-label">--:--.-- / --:--.--</span>
@@ -39,32 +39,32 @@
         </div>
 
         <div id="trim-row">
-          <span class="row-label">Trim Range:</span>
+          <span class="row-label">@tr:video_extractor.trim_range</span>
           <input id="trim-start-input" class="time-input time-input--start" type="text" value="0.0" />
-          <button id="btn-trim-start-set" class="btn btn--secondary mini-btn" type="button">Set</button>
+          <button id="btn-trim-start-set" class="btn btn--secondary mini-btn" type="button" title="@tr:video_extractor.set_start">@tr:video_extractor.set</button>
           <span class="trim-separator">-</span>
           <input id="trim-end-input" class="time-input time-input--end" type="text" value="0.0" />
-          <button id="btn-trim-end-set" class="btn btn--secondary mini-btn" type="button">Set</button>
-          <button id="btn-trim-reset" class="btn btn--secondary mini-btn" type="button">Reset</button>
+          <button id="btn-trim-end-set" class="btn btn--secondary mini-btn" type="button" title="@tr:video_extractor.set_end">@tr:video_extractor.set</button>
+          <button id="btn-trim-reset" class="btn btn--secondary mini-btn" type="button">@tr:video_extractor.reset</button>
           <span id="estimated-frames" class="inline-note">(~0 frames)</span>
         </div>
 
         <div class="section">
           <div class="section-rule">
             <span class="section-rule__lead"></span>
-            <span class="section-rule__label">Input Video</span>
+            <span class="section-rule__label">@tr:video_extractor.input_video</span>
             <span class="section-rule__line"></span>
           </div>
           <div class="file-list">
             <div class="file-row">
-              <span class="field-label">Video:</span>
-              <span id="video-value" class="path-value">No file selected</span>
-              <button id="btn-browse-video" class="btn btn--secondary browse-btn" type="button">Browse...</button>
+              <span class="field-label">@tr:video_extractor.video</span>
+              <span id="video-value" class="path-value">@tr:video_extractor.no_file</span>
+              <button id="btn-browse-video" class="btn btn--secondary browse-btn" type="button">@tr:video_extractor.browse</button>
             </div>
             <div class="file-row">
-              <span class="field-label">Output:</span>
-              <span id="output-value" class="path-value">No directory selected</span>
-              <button id="btn-browse-output" class="btn btn--secondary browse-btn" type="button">Browse...</button>
+              <span class="field-label">@tr:video_extractor.output</span>
+              <span id="output-value" class="path-value">@tr:video_extractor.no_dir</span>
+              <button id="btn-browse-output" class="btn btn--secondary browse-btn" type="button">@tr:video_extractor.browse</button>
             </div>
           </div>
         </div>
@@ -72,14 +72,14 @@
         <div class="section">
           <div class="section-rule">
             <span class="section-rule__lead"></span>
-            <span class="section-rule__label">Extraction Settings</span>
+            <span class="section-rule__label">@tr:video_extractor.settings</span>
             <span class="section-rule__line"></span>
           </div>
           <div class="settings-row">
-            <span class="field-label">Mode:</span>
+            <span class="field-label">@tr:video_extractor.mode</span>
             <select id="mode-select" class="wide-select">
-              <option value="fps">FPS-based</option>
-              <option value="interval">Frame Interval</option>
+              <option value="fps">@tr:video_extractor.mode_fps</option>
+              <option value="interval">@tr:video_extractor.mode_interval</option>
             </select>
             <div id="fps-row" class="inline-control">
               <input id="fps-slider" class="value-slider" type="range" min="0.1" max="30.0" step="0.1" value="1.0" />
@@ -95,14 +95,14 @@
         <div class="section">
           <div class="section-rule">
             <span class="section-rule__lead"></span>
-            <span class="section-rule__label">Output Format</span>
+            <span class="section-rule__label">@tr:video_extractor.output_format</span>
             <span class="section-rule__line"></span>
           </div>
           <div class="settings-row">
-            <span class="field-label">Format:</span>
+            <span class="field-label">@tr:video_extractor.format</span>
             <select id="format-select" class="wide-select">
-              <option value="png">PNG (lossless)</option>
-              <option value="jpeg">JPEG (smaller)</option>
+              <option value="png">@tr:video_extractor.format_png</option>
+              <option value="jpeg">@tr:video_extractor.format_jpeg</option>
             </select>
             <div id="quality-row" class="inline-control">
               <input id="quality-slider" class="value-slider" type="range" min="50" max="100" step="1" value="95" />
@@ -114,15 +114,15 @@
         <div class="section">
           <div class="section-rule">
             <span class="section-rule__lead"></span>
-            <span class="section-rule__label">Resolution</span>
+            <span class="section-rule__label">@tr:video_extractor.resolution</span>
             <span class="section-rule__line"></span>
           </div>
           <div class="settings-row">
-            <span class="field-label">Resolution:</span>
+            <span class="field-label">@tr:video_extractor.resolution_label</span>
             <select id="resolution-select" class="wide-select">
-              <option value="original">Original</option>
-              <option value="scale">Scale</option>
-              <option value="custom">Custom</option>
+              <option value="original">@tr:video_extractor.res_original</option>
+              <option value="scale">@tr:video_extractor.res_scale</option>
+              <option value="custom">@tr:video_extractor.res_custom</option>
             </select>
             <div id="scale-row" class="inline-control">
               <select id="scale-select" class="compact-select">
@@ -144,33 +144,33 @@
         <div class="section">
           <div class="section-rule">
             <span class="section-rule__lead"></span>
-            <span class="section-rule__label">Output Naming</span>
+            <span class="section-rule__label">@tr:video_extractor.naming</span>
             <span class="section-rule__line"></span>
           </div>
           <div class="settings-row">
-            <span class="field-label">Pattern:</span>
+            <span class="field-label">@tr:video_extractor.pattern</span>
             <input id="pattern-input" class="pattern-input" type="text" value="frame_%d" />
-            <span id="pattern-example" class="inline-note">Example: frame_1.png</span>
+            <span id="pattern-example" class="inline-note">@tr:video_extractor.example</span>
           </div>
         </div>
 
         <div class="action-row">
-          <button id="btn-start" class="btn btn--secondary action-btn" type="button">Start Extraction</button>
-          <button id="btn-cancel" class="btn btn--secondary action-btn" type="button">Cancel</button>
-          <span id="select-hint" class="inline-warning">Select video and output directory</span>
+          <button id="btn-start" class="btn btn--secondary action-btn" type="button">@tr:video_extractor.start</button>
+          <button id="btn-cancel" class="btn btn--secondary action-btn" type="button">@tr:video_extractor.cancel</button>
+          <span id="select-hint" class="inline-warning">@tr:video_extractor.select_both</span>
         </div>
         <div class="status-row">
           <div id="progress-section" class="status-section">
-            <span id="progress-text" class="status-text">Starting extraction...</span>
+            <span id="progress-text" class="status-text">@tr:video_extractor.starting</span>
             <progress id="progress-bar" max="1" value="0"></progress>
           </div>
           <div id="complete-section" class="status-section status-section--success">
-            <span id="complete-text" class="status-text">Extraction completed successfully!</span>
-            <button id="btn-complete-ok" class="btn btn--secondary mini-btn" type="button">OK</button>
+            <span id="complete-text" class="status-text">@tr:video_extractor.complete</span>
+            <button id="btn-complete-ok" class="btn btn--secondary mini-btn" type="button">@tr:video_extractor.ok</button>
           </div>
           <div id="error-section" class="status-section status-section--error">
-            <span id="error-text" class="status-text">Error</span>
-            <button id="btn-error-dismiss" class="btn btn--secondary mini-btn" type="button">Dismiss</button>
+            <span id="error-text" class="status-text">@tr:video_extractor.error</span>
+            <button id="btn-error-dismiss" class="btn btn--secondary mini-btn" type="button">@tr:video_extractor.dismiss</button>
           </div>
         </div>
       </div>

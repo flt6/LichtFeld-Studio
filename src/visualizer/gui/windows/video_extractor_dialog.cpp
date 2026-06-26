@@ -21,8 +21,8 @@
 
 #include <algorithm>
 #include <array>
-#include <chrono>
 #include <cctype>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -186,10 +186,9 @@ namespace lfs::gui {
             return static_cast<int>(std::clamp<long>(parsed, 1, 65535));
         }
 
-        [[nodiscard]] std::string patternExample(const std::string& pattern,
-                                                 const char* const extension) {
+        [[nodiscard]] std::string patternExampleStem(const std::string& pattern) {
             std::string out;
-            out.reserve(pattern.size() + 12);
+            out.reserve(pattern.size() + 8);
 
             bool consumed_value = false;
             for (size_t i = 0; i < pattern.size(); ++i) {
@@ -233,7 +232,6 @@ namespace lfs::gui {
 
             if (!consumed_value)
                 out += "1";
-            out += extension;
             return out;
         }
 
@@ -247,10 +245,6 @@ namespace lfs::gui {
     VideoExtractorDialog::~VideoExtractorDialog() {
         joinExtractionThread();
         preview_texture_.reset();
-    }
-
-    bool VideoExtractorDialog::render() {
-        return true;
     }
 
     void VideoExtractorDialog::shutdown() {
@@ -275,7 +269,7 @@ namespace lfs::gui {
         if (!ensureInitialized(ctx.ui ? ctx.ui->rml_manager : nullptr))
             return;
 
-        syncPanel(ctx);
+        syncPanel();
         host_->prepareDirect(w, h);
     }
 
@@ -285,7 +279,7 @@ namespace lfs::gui {
         if (!ensureInitialized(ctx.ui ? ctx.ui->rml_manager : nullptr))
             return;
 
-        syncPanel(ctx);
+        syncPanel();
         host_->drawDirect(x, y, w, h);
     }
 
@@ -295,7 +289,7 @@ namespace lfs::gui {
         if (!ensureInitialized(ctx.ui ? ctx.ui->rml_manager : nullptr))
             return false;
 
-        syncPanel(ctx);
+        syncPanel();
         if (hasDynamicState() || host_->needsAnimationFrame()) {
             host_->drawDirect(x, y, w, h);
             return true;
@@ -304,8 +298,7 @@ namespace lfs::gui {
     }
 
     float VideoExtractorDialog::getDirectDrawHeight() const {
-        // Use the registered floating-panel height; the document resizes inside it.
-        return 0.0f;
+        return host_ ? host_->getContentHeight() : 0.0f;
     }
 
     void VideoExtractorDialog::setInputClipY(const float y_min, const float y_max) {
@@ -314,7 +307,6 @@ namespace lfs::gui {
     }
 
     void VideoExtractorDialog::setInput(const lfs::vis::gui::PanelInputState* input) {
-        input_ = input;
         if (host_)
             host_->setInput(input);
     }
@@ -727,12 +719,10 @@ namespace lfs::gui {
         }
     }
 
-    void VideoExtractorDialog::syncPanel(const lfs::vis::gui::PanelDrawContext& ctx) {
-        (void)ctx;
+    void VideoExtractorDialog::syncPanel() {
         if (!elements_cached_)
             return;
 
-        bool changed = false;
         syncLocale();
         syncVideoPreview();
         syncTimeline();
@@ -741,11 +731,9 @@ namespace lfs::gui {
         syncOutputPreview();
 
         if (controls_dirty_) {
-            changed = true;
             controls_dirty_ = false;
-        }
-        if (changed)
             markContentDirty();
+        }
     }
 
     void VideoExtractorDialog::syncLocale() {
@@ -758,6 +746,17 @@ namespace lfs::gui {
         changed |= setCachedText(title_el_, LOC(VideoExtractor::TITLE));
         changed |= setCachedAttribute(preview_empty_el_, "data-empty-text", LOC(VideoExtractor::SELECT_PREVIEW));
         changed |= setCachedText(preview_empty_el_, LOC(VideoExtractor::SELECT_PREVIEW));
+        changed |= setCachedAttribute(step_back_btn_el_, "title", LOC(VideoExtractor::STEP_BACKWARD));
+        changed |= setCachedAttribute(step_forward_btn_el_, "title", LOC(VideoExtractor::STEP_FORWARD));
+        changed |= setCachedAttribute(trim_start_set_el_, "title", LOC(VideoExtractor::SET_START));
+        changed |= setCachedAttribute(trim_end_set_el_, "title", LOC(VideoExtractor::SET_END));
+        changed |= setCachedAttribute(browse_output_el_, "title", LOC(VideoExtractor::SELECT_FOLDER));
+        changed |= setCachedAttribute(fps_slider_el_, "title", LOC(VideoExtractor::FPS_TOOLTIP));
+        changed |= setCachedAttribute(interval_slider_el_, "title", LOC(VideoExtractor::INTERVAL_TOOLTIP));
+        changed |= setCachedAttribute(quality_slider_el_, "title", LOC(VideoExtractor::QUALITY_LABEL));
+        changed |= setCachedAttribute(custom_width_input_el_, "title", LOC(VideoExtractor::WIDTH));
+        changed |= setCachedAttribute(custom_height_input_el_, "title", LOC(VideoExtractor::HEIGHT));
+        changed |= setCachedAttribute(pattern_input_el_, "title", LOC(VideoExtractor::PATTERN_TOOLTIP));
         markContentDirty();
         controls_dirty_ |= changed;
     }
@@ -826,6 +825,9 @@ namespace lfs::gui {
                                           ? "../icon/sequencer/pause.png"
                                           : "../icon/sequencer/play.png";
         changed |= setCachedAttribute(play_icon_el_, "src", play_icon);
+        changed |= setCachedAttribute(play_btn_el_, "title",
+                                      player_->isPlaying() ? LOC(VideoExtractor::PAUSE)
+                                                           : LOC(VideoExtractor::PLAY));
 
         if (changed)
             markContentDirty();
@@ -843,8 +845,8 @@ namespace lfs::gui {
                               : 1.0f;
 
         changed |= setCachedText(time_label_el_, has_video
-                                               ? std::format("{} / {}", formatTime(current), formatTime(duration))
-                                               : "--:--.-- / --:--.--");
+                                                     ? std::format("{} / {}", formatTime(current), formatTime(duration))
+                                                     : "--:--.-- / --:--.--");
 
         const float start_pct = has_video ? (start / static_cast<float>(duration)) * 100.0f : 0.0f;
         const float end_pct = has_video ? (end / static_cast<float>(duration)) * 100.0f : 100.0f;
@@ -918,9 +920,11 @@ namespace lfs::gui {
         changed |= setCachedProperty(custom_resolution_row_el_, "display", resolution_mode_ == 2 ? "flex" : "none");
 
         changed |= setCachedControlValue(fps_slider_el_, std::format("{:.1f}", fps_));
-        changed |= setCachedText(fps_value_el_, std::format("{:.1f} FPS", fps_));
+        changed |= setCachedText(fps_value_el_, std::format("{:.1f} {}", fps_, LOC(VideoExtractor::FPS_LABEL)));
         changed |= setCachedControlValue(interval_slider_el_, std::to_string(frame_interval_));
-        changed |= setCachedText(interval_value_el_, std::format("{} frames", frame_interval_));
+        changed |= setCachedText(interval_value_el_,
+                                 std::format("{} {}", LOC(VideoExtractor::EVERY_LABEL),
+                                             localizedFormat(VideoExtractor::FRAMES_FORMAT, frame_interval_)));
         changed |= setCachedControlValue(quality_slider_el_, std::to_string(jpg_quality_));
         changed |= setCachedText(quality_value_el_, std::format("{}%", jpg_quality_));
         changed |= setCachedControlValue(custom_width_input_el_, std::to_string(custom_width_));
@@ -953,8 +957,8 @@ namespace lfs::gui {
             const float progress = total > 0 ? static_cast<float>(current) / static_cast<float>(total) : 0.0f;
             changed |= setCachedAttribute(progress_bar_el_, "value", std::format("{:.4f}", progress));
             changed |= setCachedText(progress_text_el_, total > 0
-                                                        ? localizedFormat(VideoExtractor::EXTRACTING, current, total)
-                                                        : LOC(VideoExtractor::STARTING));
+                                                            ? localizedFormat(VideoExtractor::EXTRACTING, current, total)
+                                                            : LOC(VideoExtractor::STARTING));
         }
 
         const auto snapshot = getExtractionStatusSnapshot();
@@ -997,10 +1001,11 @@ namespace lfs::gui {
         changed |= setCachedText(output_resolution_el_,
                                  player_->isOpen()
                                      ? localizedFormat(VideoExtractor::OUTPUT_RES, out_w, out_h)
-                                     : "Output: --");
+                                     : std::format("{} --", LOC(VideoExtractor::OUTPUT)));
         const char* const ext = format_selection_ == 0 ? ".png" : ".jpg";
+        const std::string preview = patternExampleStem(filename_pattern_.data());
         changed |= setCachedText(pattern_example_el_,
-                                 std::format("Example: {}", patternExample(filename_pattern_.data(), ext)));
+                                 localizedFormat(VideoExtractor::EXAMPLE, preview.c_str(), ext));
 
         if (changed)
             markContentDirty();
